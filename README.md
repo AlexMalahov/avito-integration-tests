@@ -36,3 +36,5 @@ pytest                        # весь набор
 pytest tests/unit             # только unit
 pytest tests/integration      # только integration
 pytest -k token_manager       # точечно
+
+Add-Content -Path README.md -Value "`n## Отчёт`n`nПолный отчёт по задачам: [docs/report.html](docs/report.html)`n"

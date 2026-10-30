@@ -1,0 +1,1 @@
+"""Reference contracts for the Avito ↔ Kalita integration (tickets 5704, 5898-5906)."""

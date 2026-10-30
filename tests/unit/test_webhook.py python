@@ -1,0 +1,108 @@
+from __future__ import annotations
+
+import json
+
+import pytest
+
+from avito_integration.webhook import (
+    MAX_BODY_BYTES,
+    WebhookHandler,
+    WebhookStorage,
+    generate_webhook_token,
+)
+
+CONN_UUID = "conn-1"
+PROVIDER_UUID = "prov-avito"
+COMPANY_UUID = "company-1"
+TOKEN = "secret-token-123"
+
+
+@pytest.fixture
+def storage():
+    return WebhookStorage()
+
+
+@pytest.fixture
+def handler(storage):
+    return WebhookHandler(storage)
+
+
+def make_body(event_id="evt-1", chat_id="chat-1"):
+    return json.dumps(
+        {
+            "id": event_id,
+            "type": "message",
+            "value": {"chat_id": chat_id, "user_id": 1, "created": 1_700_000_000},
+        }
+    ).encode()
+
+
+def call(handler, body, token=TOKEN, headers=None):
+    return handler.handle(
+        connection_token=TOKEN,
+        provided_token=token,
+        body_bytes=body,
+        connection_uuid=CONN_UUID,
+        provider_uuid=PROVIDER_UUID,
+        company_uuid=COMPANY_UUID,
+        headers=headers or {"Content-Type": "application/json", "User-Agent": "Avito"},
+    )
+
+
+def test_wrong_token_returns_404(handler, storage):
+    status, _ = call(handler, make_body(), token="wrong")
+    assert status == 404
+    assert storage.events == []
+
+
+def test_valid_event_saved(handler, storage):
+    status, _ = call(handler, make_body())
+    assert status == 200
+    assert len(storage.events) == 1
+    ev = storage.events[0]
+    assert ev.event_type == "message"
+    assert ev.external_event_id == "evt-1"
+    assert ev.external_order_id == "chat-1"
+
+
+def test_body_without_id_returns_200_no_event(handler, storage):
+    status, _ = call(handler, b"{}")
+    assert status == 200
+    assert storage.events == []
+
+
+def test_duplicate_event_returns_200_no_new_row(handler, storage):
+    call(handler, make_body(event_id="evt-dup"))
+    call(handler, make_body(event_id="evt-dup"))
+    assert len(storage.events) == 1
+
+
+def test_payload_too_large_413(handler):
+    huge = b"x" * (MAX_BODY_BYTES + 1)
+    status, _ = call(handler, huge)
+    assert status == 413
+
+
+def test_invalid_json_400(handler):
+    status, _ = call(handler, b"not-a-json")
+    assert status == 400
+
+
+def test_headers_filtered(handler, storage):
+    call(
+        handler,
+        make_body(),
+        headers={
+            "Content-Type": "application/json",
+            "User-Agent": "Avito",
+            "X-Secret": "leak",
+            "Cookie": "session=1",
+        },
+    )
+    ev = storage.events[0]
+    assert set(ev.headers.keys()) == {"Content-Type", "User-Agent"}
+
+
+def test_generate_token_length():
+    token = generate_webhook_token()
+    assert len(token) >= 32

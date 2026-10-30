@@ -1,0 +1,17 @@
+@"
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+.coverage
+htmlcov/
+.mypy_cache/
+*.egg-info/
+.DS_Store
+.env
+!tests/.env.test
+scaffold.py
+fix_all.py
+"@ | Set-Content -Path .gitignore -Encoding UTF8

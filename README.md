@@ -2,7 +2,9 @@
 
 Референсная реализация контрактов из задач RAZRABOTKA-5704, 5898–5906 и полный набор тестов на `pytest`.
 
-📊 **[Отчёт по проделанной работе (HTML)](docs/report.html)** — сводка по 10 задачам, покрытие тестами, что реализовано и что вне scope.
+📊 **[Отчёт по проделанной работе (HTML)](https://alexmalahov.github.io/avito-integration-tests/report.html)** — сводка по 10 задачам, покрытие тестами, что реализовано и что вне scope.
+
+[![Report](https://img.shields.io/badge/report-live-brightgreen)](https://alexmalahov.github.io/avito-integration-tests/report.html)
 
 ## Что покрыто
 
